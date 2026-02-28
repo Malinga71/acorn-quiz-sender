@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Sender — Acorn Group</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+  :root {
+    --bg: #0e0f0f;
+    --surface: #161818;
+    --border: #2a2d2d;
+    --accent: #c9f53b;
+    --accent-dim: #a8d124;
+    --text: #e8eaea;
+    --muted: #6b7070;
+    --sent: #3bf5a0;
+    --reminded: #f5c23b;
+    --pending: #f5613b;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    padding: 40px 24px;
+  }
+
+  header {
+    max-width: 900px;
+    margin: 0 auto 48px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 24px;
+  }
+
+  .brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+
+  .brand span { color: var(--accent); }
+
+  .quiz-pill {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+  }
+
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+  }
+
+  .card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+
+  .card-subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  textarea {
+    width: 100%;
+    height: 160px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 14px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+    line-height: 1.8;
+  }
+
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--muted); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 22px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    margin-top: 16px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #0e0f0f;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .btn-primary:hover { background: var(--accent-dim); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-reminder {
+    background: transparent;
+    border: 1px solid var(--reminded);
+    color: var(--reminded);
+    padding: 6px 12px;
+    font-size: 12px;
+    margin-top: 0;
+    border-radius: 6px;
+  }
+
+  .btn-reminder:hover { background: rgba(245,194,59,0.1); }
+  .btn-reminder:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* Stats row */
+  .stats {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .stat-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .stat-info { flex: 1; }
+
+  .stat-number {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Tracker table */
+  .tracker {
+    grid-column: 1 / -1;
+  }
+
+  .tracker-header {
+    display: grid;
+    grid-template-columns: 1fr 120px 140px 100px;
+    gap: 12px;
+    padding: 0 16px 12px;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tracker-row {
+    display: grid;
+    grid-template-columns: 1fr 120px 140px 100px;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    transition: background 0.15s;
+  }
+
+  .tracker-row:hover { background: rgba(255,255,255,0.02); }
+  .tracker-row:last-child { border-bottom: none; }
+
+  .email-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  .status-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .status-sent { color: var(--sent); background: rgba(59,245,160,0.08); }
+  .status-reminded { color: var(--reminded); background: rgba(245,194,59,0.08); }
+  .status-pending { color: var(--pending); background: rgba(245,97,59,0.08); }
+
+  .time-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .empty-state .icon { font-size: 32px; margin-bottom: 12px; }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 100;
+    max-width: 320px;
+  }
+
+  #toast.show { opacity: 1; transform: translateY(0); }
+  #toast.success { border-color: var(--sent); }
+  #toast.error { border-color: var(--pending); }
+
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 14px;
+    overflow: hidden;
+    display: none;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.3s;
+    width: 0%;
+  }
+
+  @media (max-width: 640px) {
+    main { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: 1fr; }
+    .tracker-header, .tracker-row { grid-template-columns: 1fr 100px; }
+    .tracker-header > *:nth-child(3),
+    .tracker-header > *:nth-child(4),
+    .tracker-row > *:nth-child(3),
+    .tracker-row > *:nth-child(4) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">Acorn <span>Quiz</span> Sender</div>
+  <div class="quiz-pill">Transformation Governance Quiz</div>
+</header>
+
+<main>
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-dot" style="background: var(--sent)"></div>
+      <div class="stat-info">
+        <div class="stat-number" id="stat-sent" style="color: var(--sent)">0</div>
+        <div class="stat-label">Sent</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-dot" style="background: var(--reminded)"></div>
+      <div class="stat-info">
+        <div class="stat-number" id="stat-reminded" style="color: var(--reminded)">0</div>
+        <div class="stat-label">Reminded</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-dot" style="background: var(--pending)"></div>
+      <div class="stat-info">
+        <div class="stat-number" id="stat-pending" style="color: var(--pending)">0</div>
+        <div class="stat-label">Not Responded</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Send Panel -->
+  <div class="card">
+    <div class="card-title">Send Quiz</div>
+    <div class="card-subtitle">Paste email addresses below, one per line. Each recipient will receive the quiz link via Outlook.</div>
+    <textarea id="email-input" placeholder="john@example.com&#10;sarah@company.com&#10;mike@acorn.lk"></textarea>
+    <div class="progress-bar" id="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <button class="btn btn-primary" id="send-btn" onclick="sendQuiz()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      Send to All
+    </button>
+  </div>
+
+  <!-- Info Panel -->
+  <div class="card">
+    <div class="card-title">How it works</div>
+    <div class="card-subtitle">Each recipient receives a personalised email via your connected Outlook account.</div>
+    <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; gap: 12px; align-items: flex-start;">
+        <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #0e0f0f; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">1</div>
+        <div>
+          <div style="font-size: 14px; font-weight: 500; margin-bottom: 3px;">Paste emails & send</div>
+          <div style="font-size: 13px; color: var(--muted);">Emails are sent one by one via EmailJS through your Outlook account.</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: flex-start;">
+        <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #0e0f0f; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">2</div>
+        <div>
+          <div style="font-size: 14px; font-weight: 500; margin-bottom: 3px;">Track status below</div>
+          <div style="font-size: 13px; color: var(--muted);">All sent recipients appear in the tracker. Status is saved in your browser.</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: flex-start;">
+        <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #0e0f0f; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">3</div>
+        <div>
+          <div style="font-size: 14px; font-weight: 500; margin-bottom: 3px;">Send reminders</div>
+          <div style="font-size: 13px; color: var(--muted);">Use the Remind button next to any recipient who hasn't responded yet.</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: flex-start;">
+        <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #0e0f0f; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">4</div>
+        <div>
+          <div style="font-size: 14px; font-weight: 500; margin-bottom: 3px;">Receive responses</div>
+          <div style="font-size: 13px; color: var(--muted);">Quiz responses are emailed to <span style="font-family: 'DM Mono', monospace; font-size: 12px; color: var(--accent);"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3954585550575e5879585a564b57175552">[email&#160;protected]</a></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tracker -->
+  <div class="card tracker">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <div>
+        <div class="card-title">Recipient Tracker</div>
+        <div class="card-subtitle" style="margin-bottom: 0;">Live status of all quiz invitations sent.</div>
+      </div>
+      <button class="btn" style="margin-top:0; background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 12px; padding: 8px 14px;" onclick="clearAll()">Clear All</button>
+    </div>
+
+    <div class="tracker-header">
+      <div>Email</div>
+      <div>Status</div>
+      <div>Sent At</div>
+      <div>Action</div>
+    </div>
+
+    <div id="tracker-body">
+      <div class="empty-state">
+        <div class="icon">📭</div>
+        No recipients yet. Paste emails above and click Send.
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  // ─── CONFIG ───────────────────────────────────────────────
+  const EMAILJS_PUBLIC_KEY   = '0f263S7NiBXIl41mM';
+  const EMAILJS_SERVICE_ID   = 'service_rxjb4cr';
+  const EMAILJS_TEMPLATE_ID  = 'template_kqqoszh';
+  const QUIZ_LINK            = 'https://claude.ai/public/artifacts/c6595e2d-120f-4c81-be22-0acd047c49d3';
+  const STORAGE_KEY          = 'acorn_quiz_recipients';
+  // ──────────────────────────────────────────────────────────
+
+  emailjs.init(EMAILJS_PUBLIC_KEY);
+
+  let recipients = loadRecipients();
+  renderTracker();
+
+  function loadRecipients() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch { return []; }
+  }
+
+  function saveRecipients() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(recipients));
+  }
+
+  function formatTime(ts) {
+    if (!ts) return '—';
+    const d = new Date(ts);
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + 
+           ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function renderTracker() {
+    const body = document.getElementById('tracker-body');
+
+    if (recipients.length === 0) {
+      body.innerHTML = `<div class="empty-state"><div class="icon">📭</div>No recipients yet. Paste emails above and click Send.</div>`;
+    } else {
+      body.innerHTML = recipients.map((r, i) => `
+        <div class="tracker-row">
+          <div class="email-text">${r.email}</div>
+          <div>
+            <span class="status-badge status-${r.status}">
+              ${r.status === 'sent' ? 'Sent' : r.status === 'reminded' ? 'Reminded' : 'Pending'}
+            </span>
+          </div>
+          <div class="time-text">${formatTime(r.sentAt)}</div>
+          <div>
+            <button class="btn btn-reminder" onclick="sendReminder(${i})" ${r.status === 'pending' ? 'disabled' : ''}>
+              ${r.status === 'reminded' ? 'Re-remind' : 'Remind'}
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Update stats
+    document.getElementById('stat-sent').textContent = recipients.filter(r => r.status === 'sent').length;
+    document.getElementById('stat-reminded').textContent = recipients.filter(r => r.status === 'reminded').length;
+    document.getElementById('stat-pending').textContent = recipients.filter(r => r.status === 'sent' || r.status === 'reminded').length;
+  }
+
+  async function sendQuiz() {
+    const raw = document.getElementById('email-input').value.trim();
+    if (!raw) { showToast('Please paste at least one email address.', 'error'); return; }
+
+    const emails = [...new Set(
+      raw.split('\n')
+         .map(e => e.trim().toLowerCase())
+         .filter(e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))
+    )];
+
+    if (emails.length === 0) { showToast('No valid email addresses found.', 'error'); return; }
+
+    const newEmails = emails.filter(e => !recipients.find(r => r.email === e));
+    if (newEmails.length === 0) { showToast('All these emails have already been sent to.', 'error'); return; }
+
+    const btn = document.getElementById('send-btn');
+    btn.disabled = true;
+    btn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg> Sending...`;
+
+    const progressBar = document.getElementById('progress-bar');
+    const progressFill = document.getElementById('progress-fill');
+    progressBar.style.display = 'block';
+
+    let sent = 0, failed = 0;
+
+    for (let i = 0; i < newEmails.length; i++) {
+      const email = newEmails[i];
+      progressFill.style.width = `${((i + 1) / newEmails.length) * 100}%`;
+
+      try {
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+          to_email: email,
+          subject: 'Transformation Governance Quiz',
+          message: 'This is a simple quiz to test your understanding of transformation governance. Please click the link below and answer the questions.',
+          quiz_link: QUIZ_LINK,
+          from_name: 'Malinga Arsakularatne'
+        });
+
+        recipients.push({ email, status: 'sent', sentAt: Date.now(), remindedAt: null });
+        sent++;
+      } catch (err) {
+        console.error('Failed to send to', email, err);
+        failed++;
+      }
+
+      saveRecipients();
+      renderTracker();
+      await delay(300); // small delay between sends
+    }
+
+    progressBar.style.display = 'none';
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send to All`;
+    document.getElementById('email-input').value = '';
+
+    if (failed === 0) showToast(`✓ Sent to ${sent} recipient${sent > 1 ? 's' : ''} successfully.`, 'success');
+    else showToast(`Sent: ${sent}, Failed: ${failed}. Check console for details.`, 'error');
+  }
+
+  async function sendReminder(index) {
+    const r = recipients[index];
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+
+    try {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: r.email,
+        subject: 'Reminder: Transformation Governance Quiz',
+        message: 'This is a friendly reminder to complete the Transformation Governance Quiz. Please click the link below when you get a chance.',
+        quiz_link: QUIZ_LINK,
+        from_name: 'Malinga Arsakularatne'
+      });
+
+      recipients[index].status = 'reminded';
+      recipients[index].remindedAt = Date.now();
+      saveRecipients();
+      renderTracker();
+      showToast(`✓ Reminder sent to ${r.email}`, 'success');
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = 'Remind';
+      showToast('Failed to send reminder. Check console.', 'error');
+    }
+  }
+
+  function clearAll() {
+    if (!confirm('Clear all recipient data? This cannot be undone.')) return;
+    recipients = [];
+    saveRecipients();
+    renderTracker();
+    showToast('All recipients cleared.', 'success');
+  }
+
+  function delay(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+  let toastTimer;
+  function showToast(msg, type = 'success') {
+    
